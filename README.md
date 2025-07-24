@@ -1,13 +1,6 @@
 # monte-carlo-sim-CUDA
-Of course. This README is the culmination of all your hard work. It's designed to be the main document in your GitHub repository, telling the complete story of your project in a clear, compelling, and professional manner. It's written for an audience of professors on an admissions committee.
-
----
-
 # Advanced Monte Carlo Methods for Exotic Option Pricing with CUDA Acceleration
 
-**Author:** [Your Name]  
-**Date:** [Current Date]  
-**Contact:** [Your Email / LinkedIn / GitHub Profile]
 
 ## 1. Project Overview
 
