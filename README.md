@@ -53,14 +53,14 @@ State-of-the-art variance reduction techniques were implemented to improve simul
 
 #### Convergence Analysis (MC vs. QMC)
 A comparison between standard Monte Carlo, antithetic variates, and Quasi-Monte Carlo (using a Sobol sequence generator) was performed.
-
+<img width="1012" height="629" alt="convg rate heston model" src="https://github.com/user-attachments/assets/8d7df163-331e-4660-ac3f-4309fffc743c" />
 *   **Result:** The convergence plot shows that for this high-dimensional problem (d=100), QMC, while noisy, generally trended towards a faster convergence rate ($O(N^{-1})$) than standard MC ($O(N^{-0.5})$) for a large number of paths.
 
 
 
 #### Multilevel Monte Carlo (MLMC)
 A full MLMC pricer was implemented for the Asian option under the Heston model. The implementation journey revealed and resolved several critical numerical challenges, including floating-point instability and discretization bias at coarse levels, which were fixed by enforcing `float64` precision and introducing a `base_steps` parameter.
-
+<img width="1589" height="590" alt="mlmc" src="https://github.com/user-attachments/assets/d2f19d78-f76a-4d36-ac1a-7bc0b2c086b0" />
 *   **Result:** The final, correct MLMC implementation demonstrated its theoretical power, achieving the target accuracy with a **21.56x speedup** over a highly optimized standard Monte Carlo method. The diagnostic plots show the classic MLMC behavior: variance decays rapidly across levels, allowing the algorithm to concentrate computational effort on cheaper, coarser simulations.
 
 | Method                    | Target Error | Time (s) | Speedup  |
@@ -73,7 +73,7 @@ A full MLMC pricer was implemented for the Asian option under the Heston model. 
 ### Part 4: Financial Application - Risk Analysis of Greeks
 
 The pricer was extended to calculate option sensitivities (Greeks) using finite differences. The Vega surface was calculated and visualized, connecting the computational tool to a practical risk management application.
-
+<img width="804" height="658" alt="vega surface" src="https://github.com/user-attachments/assets/9f6fa059-7d2d-4795-a034-bfdbadf6a36a" />
 *   **Result:** The generated Vega surface correctly displays the expected financial behavior: Vega is highest for at-the-money, long-dated options and decays towards the wings and for shorter maturities. This demonstrates a complete understanding of the financial product's risk profile.
 
 
