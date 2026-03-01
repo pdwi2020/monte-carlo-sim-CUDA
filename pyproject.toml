@@ -1,0 +1,139 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "pybind11>=2.10", "numpy>=1.20"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "mc-pricer"
+version = "2.0.0"
+description = "GPU-accelerated Monte Carlo option pricing with advanced models"
+readme = "README.md"
+license = {text = "MIT"}
+requires-python = ">=3.9"
+authors = [
+    {name = "Monte Carlo Team"}
+]
+keywords = [
+    "monte-carlo",
+    "option-pricing",
+    "quantitative-finance",
+    "cuda",
+    "gpu",
+    "heston",
+    "bates",
+    "sabr",
+    "derivatives"
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "Intended Audience :: Science/Research",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial :: Investment",
+    "Topic :: Scientific/Engineering :: Mathematics",
+]
+dependencies = [
+    "numpy>=1.20.0",
+    "scipy>=1.7.0",
+    "pybind11>=2.10.0",
+]
+
+[project.optional-dependencies]
+gpu = [
+    "cupy-cuda12x>=12.0.0",
+]
+api = [
+    "fastapi>=0.100.0",
+    "uvicorn>=0.23.0",
+    "pydantic>=2.0.0",
+]
+cache = [
+    "redis>=4.5.0",
+]
+ml = [
+    "torch>=2.0.0",
+    "gymnasium>=0.29.0",
+    "stable-baselines3>=2.0.0",
+]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=4.0.0",
+    "black>=23.0.0",
+    "isort>=5.12.0",
+    "flake8>=6.0.0",
+    "mypy>=1.0.0",
+]
+docs = [
+    "sphinx>=6.0.0",
+    "sphinx-rtd-theme>=1.2.0",
+]
+all = [
+    "mc-pricer[gpu,api,cache,ml,dev,docs]",
+]
+
+[project.urls]
+Homepage = "https://github.com/yourusername/monte-carlo-sim-CUDA"
+Documentation = "https://github.com/yourusername/monte-carlo-sim-CUDA#readme"
+Repository = "https://github.com/yourusername/monte-carlo-sim-CUDA"
+Issues = "https://github.com/yourusername/monte-carlo-sim-CUDA/issues"
+
+[project.scripts]
+mc-pricer = "api.main:main"
+mc-research = "research.pipeline:main"
+
+[tool.setuptools]
+packages = ["api", "tests", "research"]
+py-modules = ["mc_pricer", "risk_metrics", "xva", "calibration", "cache"]
+
+[tool.setuptools.package-data]
+"*" = ["*.cu", "*.cpp"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+filterwarnings = [
+    "ignore::DeprecationWarning",
+]
+
+[tool.black]
+line-length = 100
+target-version = ['py39', 'py310', 'py311']
+include = '\.pyi?$'
+exclude = '''
+/(
+    \.git
+    | \.mypy_cache
+    | \.pytest_cache
+    | \.venv
+    | build
+    | dist
+)/
+'''
+
+[tool.isort]
+profile = "black"
+line_length = 100
+known_first_party = ["mc_pricer", "risk_metrics", "xva", "calibration", "cache", "api", "research"]
+
+[tool.mypy]
+python_version = "3.11"
+warn_return_any = true
+warn_unused_configs = true
+ignore_missing_imports = true
+
+[tool.coverage.run]
+source = ["."]
+omit = ["tests/*", "setup.py"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if __name__ == .__main__.:",
+    "raise NotImplementedError",
+]

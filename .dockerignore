@@ -1,0 +1,78 @@
+# Git
+.git
+.gitignore
+
+# Python
+__pycache__
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info
+dist
+build
+eggs
+parts
+var
+sdist
+develop-eggs
+.installed.cfg
+lib
+lib64
+.eggs
+
+# Virtual environments
+venv
+ENV
+env
+
+# IDE
+.idea
+.vscode
+*.swp
+*.swo
+
+# Testing
+.pytest_cache
+.coverage
+htmlcov
+.tox
+.nox
+
+# Build artifacts
+*.o
+*.obj
+*.dll
+*.exe
+
+# Notebooks checkpoints
+.ipynb_checkpoints
+
+# Logs and databases
+*.log
+*.db
+*.sqlite
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Documentation build
+docs/_build
+
+# Temporary files
+tmp
+temp
+*.tmp
+*.temp
+
+# Secrets and config
+.env
+.env.*
+secrets.yaml
+config.local.yaml
+
+# Large files
+*.weights
+*.model
+*.pkl

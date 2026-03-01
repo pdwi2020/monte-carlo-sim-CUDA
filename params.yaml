@@ -1,0 +1,5 @@
+pipeline:
+  seed: 42
+  quick: true
+  market_symbol: AAPL
+  market_provider: polygon_free

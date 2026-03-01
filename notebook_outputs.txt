@@ -1,0 +1,1378 @@
+=== Cell 2 exec=1 ===
+-- stream --
+Overwriting mc_pricer.py
+
+
+=== Cell 3 exec=2 ===
+-- stream --
+Loaded mc_pricer from: /notebooks/mc_pricer.py
+======================================================================
+European Call Option Pricing (Black-Scholes GBM)
+======================================================================
+Option Price:      $10.4333
+Standard Error:    $0.0466
+Paths Used:        100,000
+Variance Red.:     antithetic
+Execution Time:    0.704s
+
+Black-Scholes:     $10.4506
+MC vs BS Error:    $0.0173 (0.17%)
+======================================================================
+
+
+=== Cell 5 exec=3 ===
+-- stream --
+
+======================================================================
+ASIAN PUT OPTION - MODEL COMPARISON
+======================================================================
+
+1. GBM (Constant Volatility)
+   Price:          $3.4214 ± $0.0004
+   Time:           0.832s
+   CV Beta:        0.9729
+
+2. Heston (Stochastic Volatility)
+   Price:          $3.2568 ± $0.0167
+   Time:           4.543s
+   Feller Check:   ✓ Satisfied
+                   (2κθ = 0.160 > ξ² = 0.090)
+
+3. Bates (Heston + Jumps)
+   Price:          $3.3281 ± $0.0171
+   Time:           6.915s
+   Jump Comp.:     -0.0044
+
+======================================================================
+MODEL COMPARISON SUMMARY
+======================================================================
+GBM Price:      $3.4214  (baseline)
+Heston Price:   $3.2568  (-4.81%)
+Bates Price:    $3.3281  (-2.73%)
+
+Key Insights:
+  • Heston adds 4.81% price impact from stochastic vol
+  • Jumps add 2.19% additional impact
+  • Negative correlation ρ=-0.7 creates leverage effect
+======================================================================
+
+
+=== Cell 7 exec=4 ===
+-- stream --
+
+======================================================================
+DISCRETIZATION SCHEMES COMPARISON
+======================================================================
+
+Heston Parameters:
+  v0=0.04, κ=1.5, θ=0.04
+  ξ=0.6, ρ=-0.7
+
+Feller Condition: 2κθ = 0.120 vs ξ² = 0.360
+Status: ✗ VIOLATED (QE advantage)
+
+Euler-Maruyama:
+  Price:          $3.1455 ± $0.0293
+  Time:           0.475s
+
+Milstein:
+  Price:          $3.0998 ± $0.0291
+  Time:           0.517s
+
+Quadratic-Exponential (QE):
+  Price:          $1.8094 ± $0.0148
+  Time:           1.377s
+
+----------------------------------------------------------------------
+CONVERGENCE TEST: QE with varying time steps
+----------------------------------------------------------------------
+Steps= 50:  Price=$2.0431  Time=0.684s
+Steps=100:  Price=$1.8135  Time=1.379s
+Steps=252:  Price=$1.5365  Time=3.488s
+Steps=500:  Price=$1.3888  Time=7.251s
+
+======================================================================
+KEY OBSERVATIONS:
+======================================================================
+  • QE scheme handles Feller violations without numerical instability
+  • QE achieves better accuracy with fewer time steps
+  • Euler/Milstein may produce biased results when Feller is violated
+  • QE is the recommended default for Heston/Bates models
+======================================================================
+
+
+=== Cell 9 exec=5 ===
+-- stream --
+
+======================================================================
+BARRIER OPTIONS DEMONSTRATION
+======================================================================
+
+Market Setup:
+  S0=$100.0, K=$100.0, r=0.05, σ=0.25, T=1.0yr
+  Upper Barrier: $120.0
+  Lower Barrier: $85.0
+
+----------------------------------------------------------------------
+Test 1: DOWN BARRIER PUT OPTIONS
+----------------------------------------------------------------------
+Vanilla Put:        $7.4375
+Down-Out Put:       $0.4896
+Down-In Put:        $7.0372
+Sum (In + Out):     $7.5268
+Parity Error:       $0.0893
+Parity Check:       ✓ PASS
+
+----------------------------------------------------------------------
+Test 2: UP BARRIER CALL OPTIONS
+----------------------------------------------------------------------
+Vanilla Call:       $12.3145
+Up-Out Call:        $0.8087
+Up-In Call:         $11.4907
+Sum (In + Out):     $12.2994
+Parity Error:       $0.0151
+Parity Check:       ✓ PASS
+
+----------------------------------------------------------------------
+Test 3: ALL BARRIER TYPES SUMMARY
+----------------------------------------------------------------------
+
+Option Type          Barrier    Price        vs Vanilla
+------------------------------------------------------------
+Up-Out Call          $120.0     $0.8096       -93.4%
+Up-In Call           $120.0     $11.6037       -5.8%
+Down-Out Call        $85.0      $11.1652       -9.3%
+Down-In Call         $85.0      $1.0668       -91.3%
+Up-Out Put           $120.0     $6.8813        -7.5%
+Up-In Put            $120.0     $0.5392       -92.8%
+Down-Out Put         $85.0      $0.4943       -93.4%
+Down-In Put          $85.0      $6.9534        -6.5%
+
+======================================================================
+KEY OBSERVATIONS:
+======================================================================
+  • Barrier parity verified: Knock-In + Knock-Out ≈ Vanilla
+  • Out options are cheaper than vanilla (early termination risk)
+  • In options may be cheaper (activation requirement)
+  • Barrier proximity affects pricing significantly
+======================================================================
+
+
+=== Cell 11 exec=6 ===
+-- stream --
+
+======================================================================
+CONTROL VARIATES VARIANCE REDUCTION
+======================================================================
+
+Pricing Asian Call Option:
+  S0=$100.0, K=$100.0, r=0.05, σ=0.2, T=1.0yr
+
+Control: Geometric Asian (has analytical solution)
+
+Method                         Price        Std Error    CV Beta    Efficiency
+---------------------------------------------------------------------------
+No Variance Reduction          $5.7512      $0.035612    N/A         1.00x
+Antithetic Variates            $5.7911      $0.035849    N/A         0.99x
+Control Variates               $5.1110      $0.000998    1.0362     1273.51x
+Antithetic + Control Variates  $5.1108      $0.001013    1.0364     1236.43x
+
+----------------------------------------------------------------------
+CONTROL VARIATE ANALYSIS
+----------------------------------------------------------------------
+
+Without Control Variates:
+  Standard Error:    $0.035612
+  Variance:          0.00126819
+
+With Control Variates:
+  Standard Error:    $0.000998
+  Variance:          0.00000100
+  Beta Coefficient:  1.0362
+
+Variance Reduction:  99.9%
+Equivalent Paths (no CV): 63,675,646 paths
+Computational Savings:    1273.5x fewer paths needed with CV
+
+----------------------------------------------------------------------
+CONFIDENCE INTERVALS (95%)
+----------------------------------------------------------------------
+
+No Variance Reduction:
+  Point Estimate:  $5.7512
+  95% CI:          [$5.6814, $5.8210]
+  CI Width:        $0.1396
+
+Antithetic Variates:
+  Point Estimate:  $5.7911
+  95% CI:          [$5.7208, $5.8613]
+  CI Width:        $0.1405
+
+Control Variates:
+  Point Estimate:  $5.1110
+  95% CI:          [$5.1090, $5.1130]
+  CI Width:        $0.0039
+
+Antithetic + Control Variates:
+  Point Estimate:  $5.1108
+  95% CI:          [$5.1088, $5.1128]
+  CI Width:        $0.0040
+
+======================================================================
+KEY OBSERVATIONS:
+======================================================================
+  • Control variates reduce variance by 100%
+  • Optimal β=1.0362 maximizes variance reduction
+  • Geometric Asian is highly correlated with arithmetic Asian
+  • Combining antithetic + CV achieves best results
+  • CV allows 1274x fewer paths for same accuracy
+======================================================================
+
+
+=== Cell 13 exec=7 ===
+-- stream --
+
+======================================================================
+GREEKS CALCULATION - OPTION SENSITIVITIES
+======================================================================
+
+Option Parameters:
+  Underlying:  S0=$100.0
+  Strike:      K=$100.0
+  Rate:        r=0.05
+  Volatility:  σ=0.25
+  Maturity:    T=1.0yr
+
+----------------------------------------------------------------------
+EUROPEAN CALL GREEKS
+----------------------------------------------------------------------
+
+Option Price:    $12.3145 ± $0.0587
+
+Greeks:
+  Delta (Δ):       0.6275  (price change per $1 spot move)
+  Gamma (Γ):       0.0150  (delta change per $1 spot move)
+  Vega (ν):        0.3775  (price change per 1% vol move)
+  Theta (Θ):      -0.0199  (price change per day)
+  Rho (ρ):         0.5047  (price change per 1% rate move)
+
+----------------------------------------------------------------------
+ASIAN PUT GREEKS
+----------------------------------------------------------------------
+
+Option Price:    $4.4253 ± $0.0209
+
+Greeks:
+  Delta (Δ):      -0.3987
+  Gamma (Γ):       0.0262
+  Vega (ν):        0.2181
+  Theta (Θ):      -0.0042
+  Rho (ρ):        -0.2383
+
+----------------------------------------------------------------------
+DELTA SURFACE - European Call
+----------------------------------------------------------------------
+
+K \ T       0.25yr    0.50yr    1.00yr    2.00yr
+---------------------------------------------
+$90       0.8435  0.7965  0.7736  0.7766
+$95       0.7182  0.6997  0.7029  0.7280
+$100      0.5648  0.5914  0.6280  0.6779
+$105      0.4075  0.4788  0.5489  0.6242
+$110      0.2726  0.3757  0.4750  0.5723
+
+----------------------------------------------------------------------
+VEGA SURFACE - European Call
+----------------------------------------------------------------------
+
+K \ T       0.25yr    0.50yr    1.00yr    2.00yr
+---------------------------------------------
+$90       0.1189  0.1982  0.2979  0.4173
+$95       0.1675  0.2436  0.3428  0.4641
+$100      0.1952  0.2723  0.3746  0.5017
+$105      0.1928  0.2796  0.3926  0.5313
+$110      0.1652  0.2668  0.3953  0.5501
+
+======================================================================
+KEY OBSERVATIONS:
+======================================================================
+  • Delta measures directional exposure (hedge ratio)
+  • Gamma measures convexity (delta hedging frequency)
+  • Vega shows volatility sensitivity (highest ATM)
+  • Theta quantifies time decay (negative for long options)
+  • Rho measures interest rate sensitivity
+  • ATM options have highest Gamma and Vega
+======================================================================
+
+
+=== Cell 15 exec=8 ===
+-- stream --
+Requirement already satisfied: numpy in /usr/local/lib/python3.11/dist-packages (1.26.3)
+Requirement already satisfied: matplotlib in /usr/local/lib/python3.11/dist-packages (3.7.3)
+Requirement already satisfied: scipy in /usr/local/lib/python3.11/dist-packages (1.11.2)
+Requirement already satisfied: cupy-cuda12x in /usr/local/lib/python3.11/dist-packages (12.2.0)
+Requirement already satisfied: pybind11 in /usr/local/lib/python3.11/dist-packages (3.0.1)
+Requirement already satisfied: contourpy>=1.0.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (1.2.0)
+Requirement already satisfied: cycler>=0.10 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (0.12.1)
+Requirement already satisfied: fonttools>=4.22.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (4.47.2)
+Requirement already satisfied: kiwisolver>=1.0.1 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (1.4.5)
+Requirement already satisfied: packaging>=20.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (23.2)
+Requirement already satisfied: pillow>=6.2.0 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (9.5.0)
+Requirement already satisfied: pyparsing>=2.3.1 in /usr/lib/python3/dist-packages (from matplotlib) (2.4.7)
+Requirement already satisfied: python-dateutil>=2.7 in /usr/local/lib/python3.11/dist-packages (from matplotlib) (2.8.2)
+Requirement already satisfied: fastrlock>=0.5 in /usr/local/lib/python3.11/dist-packages (from cupy-cuda12x) (0.8.2)
+Requirement already satisfied: six>=1.5 in /usr/lib/python3/dist-packages (from python-dateutil>=2.7->matplotlib) (1.16.0)
+[33mWARNING: Running pip as the 'root' user can result in broken permissions and conflicting behaviour with the system package manager. It is recommended to use a virtual environment instead: https://pip.pypa.io/warnings/venv[0m[33m
+[0m
+
+=== Cell 16 exec=9 ===
+-- stream --
+============================================================
+GPU DETECTION & TROUBLESHOOTING
+============================================================
+✓ CuPy installed
+✓ CUDA is available
+  CUDA Runtime Version: 12.0
+  GPU Name: NVIDIA RTX A6000
+  Compute Capability: 8.6
+  Total Memory: 51.0 GB
+  Multiprocessors: 84
+  ✓ GPU is Ampere/Ada/Hopper architecture (optimal)
+
+============================================================
+PYTHON ENVIRONMENT
+============================================================
+Python version: 3.11.7 (main, Dec  8 2023, 18:56:58) [GCC 11.4.0]
+✓ numpy installed
+✓ scipy installed
+✓ matplotlib installed
+✓ pybind11 installed
+
+============================================================
+
+
+=== Cell 17 exec=10 ===
+-- stream --
+✅ CuPy found. GPU backend enabled on: NVIDIA RTX A6000
+
+
+=== Cell 18 exec=11 ===
+-- stream --
+EuropeanOption class defined.
+
+
+=== Cell 19 exec=12 ===
+-- stream --
+MonteCarloPricer class defined.
+
+
+=== Cell 20 exec=13 ===
+-- stream --
+=========================================================
+  Monte Carlo Option Pricing with CUDA Acceleration
+=========================================================
+
+--- Option Parameters ---
+          S0: 100.0
+           K: 105.0
+           T: 1.0
+           r: 0.05
+       sigma: 0.2
+ option_type: call
+-------------------------
+Analytical Black-Scholes Price: 8.021352
+
+--- Running on CPU (NumPy) ---
+Pricer initialized on CPU with 10,000,000 paths.
+Estimated Price: 8.022291
+Standard Error:  0.004172
+Execution Time:  72.3168 seconds
+Absolute Error vs Analytical: 0.000939
+
+--- Running on GPU (CuPy) ---
+Pricer initialized on GPU with 10,000,000 paths.
+Estimated Price: 8.023639
+Standard Error:  0.004174
+Execution Time:  0.9250 seconds
+Absolute Error vs Analytical: 0.002287
+
+--- Performance Summary ---
+Speedup Factor (CPU Time / GPU Time): 78.18x
+=========================================================
+
+
+=== Cell 21 exec=14 ===
+-- stream --
+HestonModel class defined.
+
+
+=== Cell 22 exec=15 ===
+-- stream --
+AsianOption class defined.
+
+
+=== Cell 23 exec=16 ===
+-- stream --
+MonteCarloPricerV2 class defined.
+
+
+=== Cell 24 exec=17 ===
+-- stream --
+
+=========================================================
+  Part 2: Heston Model & Asian Option Pricing
+=========================================================
+
+--- Heston Model & Asian Option Parameters ---
+      S0: 100.0
+       r: 0.05
+      v0: 0.04
+   kappa: 2.0
+   theta: 0.04
+      xi: 0.5
+     rho: -0.7
+       K: 100.0
+       T: 1.0
+option_type: call
+--------------------------------------------
+
+--- Running on CPU (NumPy) ---
+PricerV2 initialized on CPU for HestonModel with 1,000,000 paths.
+Estimated Price: 5.642671
+Standard Error:  0.006214
+Execution Time:  18.5450 seconds
+
+--- Running on GPU (CuPy) ---
+PricerV2 initialized on GPU for HestonModel with 1,000,000 paths.
+Estimated Price: 5.643465
+Standard Error:  0.006212
+Execution Time:  0.3265 seconds
+
+--- Performance Summary (Heston Model) ---
+CPU and GPU prices are close: 5.642671 vs 5.643465
+Speedup Factor (CPU Time / GPU Time): 56.81x
+=========================================================
+
+
+=== Cell 25 exec=18 ===
+-- stream --
+SobolGenerator class for QMC defined.
+
+
+=== Cell 26 exec=19 ===
+-- stream --
+MonteCarloPricerV3 class defined.
+
+
+=== Cell 27 exec=20 ===
+-- stream --
+
+=========================================================
+  Part 3: Convergence Analysis of Advanced Samplers
+=========================================================
+
+Calculating high-precision reference price with MC+Antithetic...
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+Reference Price: 5.642445
+
+--- Running for 1,024 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.073846
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.069836
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.081378
+
+--- Running for 2,048 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.006810
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.082963
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.031058
+
+--- Running for 4,096 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.072346
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.000163
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.023842
+
+--- Running for 8,192 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.121871
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.082496
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.006924
+
+--- Running for 16,384 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.054213
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.034816
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.013123
+
+--- Running for 32,768 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.012415
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.015707
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.002832
+
+--- Running for 65,536 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.003723
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.000204
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.003326
+
+--- Running for 131,072 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.021141
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.000559
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.004937
+
+--- Running for 262,144 paths ---
+PricerV3 initialized on GPU with sampler='mc', antithetic=False.
+MC Error: 0.008262
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+MC+Antithetic Error: 0.007377
+PricerV3 initialized on GPU with sampler='qmc', antithetic=False.
+QMC Error: 0.001652
+
+
+-- display_data --
+<Figure size 1200x700 with 1 Axes>
+
+=== Cell 28 exec=21 ===
+-- stream --
+MLMCPricer class defined (Final Version with Base Steps).
+
+
+=== Cell 29 exec=22 ===
+-- stream --
+
+=========================================================
+  Part 4: Multilevel Monte Carlo Execution & Analysis
+=========================================================
+
+--- Starting MLMC with L=5, M=2, base_steps=4, Epsilon=1.0e-02 ---
+Running pilot simulation with 20,000 paths...
+Level 0: Steps=4, Var=4.48e+01, Cost=0.0023s
+Level 1: Steps=8, Var=1.24e+01, Cost=0.0043s
+Level 2: Steps=16, Var=7.55e+00, Cost=0.0056s
+Level 3: Steps=32, Var=4.13e+00, Cost=0.0105s
+Level 4: Steps=64, Var=2.03e+00, Cost=0.0205s
+Level 5: Steps=128, Var=9.88e-01, Cost=0.0405s
+
+Optimal path allocation determined:
+Level 0: N_0 = 1,918,799 paths
+Level 1: N_1 = 737,318 paths
+Level 2: N_2 = 500,272 paths
+Level 3: N_3 = 270,680 paths
+Level 4: N_4 = 135,995 paths
+Level 5: N_5 = 67,565 paths
+
+Running main MLMC simulation...
+Level 0: E[P_l-P_{l-1}] = 5.663141, Cost=0.0012s
+Level 1: E[P_l-P_{l-1}] = 0.003432, Cost=0.0031s
+Level 2: E[P_l-P_{l-1}] = -0.017822, Cost=0.0056s
+Level 3: E[P_l-P_{l-1}] = -0.006002, Cost=0.0107s
+Level 4: E[P_l-P_{l-1}] = 0.004747, Cost=0.0208s
+Level 5: E[P_l-P_{l-1}] = 0.003491, Cost=0.0409s
+
+--- MLMC Results ---
+MLMC Estimated Price: 5.650987
+Total Computation Cost: 0.0823 seconds
+
+--- Standard MC Comparison ---
+To achieve a standard error of 0.01, standard MC requires ~447,578 paths.
+PricerV3 initialized on GPU with sampler='mc', antithetic=True.
+Standard MC Estimated Price: 5.637952
+Standard MC Computation Cost: 0.0527 seconds
+
+--- MLMC vs Standard MC Performance Summary ---
+Target Standard Error: 0.01
+MLMC Price: 5.650987  |  Standard MC Price: 5.637952
+MLMC Cost: 0.0823s
+Standard MC Cost: 0.0527s
+Speedup Factor (Standard MC Cost / MLMC Cost): 0.64x
+Note: MLMC is slower at this epsilon. Try a smaller epsilon (e.g., 0.005) to see MLMC benefits.
+=========================================================
+
+-- display_data --
+<Figure size 1600x600 with 2 Axes>
+
+=== Cell 30 exec=23 ===
+-- display_data --
+<Figure size 1400x600 with 2 Axes>
+
+=== Cell 31 exec=24 ===
+-- stream --
+MonteCarloPricerV4 class defined.
+
+
+=== Cell 32 exec=25 ===
+-- stream --
+
+=========================================================
+  Part 5: Calculating Greeks for Risk Management
+=========================================================
+
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating price for base model...
+Base Price: 5.643633, Time: 0.2011s
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+
+--- Greek Calculation Results ---
+Asian Call Option Price: 5.643633
+Delta: 0.666668
+Vega (per 1% vol change): 0.137884
+=========================================================
+
+Interpretation:
+A Delta of 0.67 means that if the stock price increases by $1, the option price is expected to increase by $0.67.
+To be 'delta-hedged', a seller of this option would need to buy this many shares of the underlying stock.
+
+A Vega of 0.14 means that if the implied volatility increases by 1% (e.g., from 20% to 21%), the option price is expected to increase by $0.14.
+
+
+=== Cell 33 exec=26 ===
+-- stream --
+
+--- Generating data for Vega Surface Plot ---
+Calculating for S0=80.00, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.20...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.34...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.49...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.63...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.78...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=0.92...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=1.07...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=1.21...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=1.36...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=80.00, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=84.44, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=88.89, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=93.33, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=97.78, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=102.22, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=106.67, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=111.11, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=115.56, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+Calculating for S0=120.00, T=1.50...
+PricerV4 initialized on GPU with pre-generated random numbers.
+Calculating Delta with S0 bump of 0.01...
+Calculating Vega with sigma bump of 1.0%...
+
+-- display_data --
+<Figure size 1200x800 with 2 Axes>
+
+=== Cell 34 exec=27 ===
+-- stream --
+✅ BatesModel class defined.
+
+
+=== Cell 35 exec=28 ===
+-- stream --
+✅ MonteCarloPricerV5 class defined.
+
+
+=== Cell 36 exec=29 ===
+-- stream --
+
+=========================================================
+  Part 6: Pricing with the Bates Model (Heston + Jumps)
+=========================================================
+
+PricerV5 initialized on GPU for HestonModel with 2,000,000 paths.
+--- 1. Pure Heston Model ---
+Option Price: 1.021737
+Execution Time: 0.2221 seconds
+
+PricerV5 initialized on GPU for BatesModel with 2,000,000 paths.
+--- 2. Bates Model (with downward jumps) ---
+Option Price: 2.564853
+Execution Time: 0.3512 seconds
+
+PricerV5 initialized on GPU for BatesModel with 2,000,000 paths.
+--- 3. Sanity Check: Bates with Zero Jump Intensity ---
+Option Price: 1.018515
+Execution Time: 0.3298 seconds
+
+--- Analysis of Results ---
+Heston Price: 1.0217
+Bates (Zero Jumps) Price: 1.0185 -> This should be very close to the Heston price.
+Bates (Crash Jumps) Price: 2.5649 -> This should be higher, as the put provides insurance against jumps.
+
+The higher price for the put option under the Bates model reflects the premium investors are willing to pay for protection against sudden market crashes, a risk not captured by the continuous Heston model.
+=========================================================
+
+
+=== Cell 37 exec=30 ===
+-- stream --
+pybind11 already installed
+
+
+=== Cell 38 exec=31 ===
+-- stream --
+Overwriting bates_kernel.cu
+
+
+=== Cell 39 exec=32 ===
+-- stream --
+Overwriting bates_wrapper.cu
+
+
+=== Cell 40 exec=33 ===
+-- stream --
+Overwriting build.sh
+
+
+=== Cell 41 exec=34 ===
+-- stream --
+Overwriting bates_kernel_extended.cu
+
+
+=== Cell 42 exec=35 ===
+-- stream --
+Overwriting bates_wrapper_extended.cpp
+
+
+=== Cell 43 exec=36 ===
+-- stream --
+Overwriting build_extended.sh
+
+
+=== Cell 44 exec=37 ===
+-- stream --
+Overwriting test_bates_extended.py
+
+
+=== Cell 45 exec=38 ===
+-- stream --
+=== Extended Bates Model CUDA Build ===
+CUDA Home: /usr/local/cuda
+Architectures: 75 80 86 89 90
+
+Features:
+  - QE (Quadratic-Exponential) variance scheme
+  - Barrier options (knock-in/knock-out)
+  - Lookback options
+  - Control variates
+  - Greeks (Delta, Gamma, Vega, Theta, Rho)
+
+>>> Compiling bates_kernel_extended.cu...
+>>> Compiling bates_wrapper_extended.cpp...
+>>> Linking...
+
+=== Build Complete ===
+Created: bates_extended.so
+
+To use:
+  python -c "import bates_extended; print(bates_extended.__doc__)"
+
+Example:
+  import bates_extended
+  result = bates_extended.price(
+      num_paths=100000, num_steps=252, T=1.0, K=100.0,
+      S0=100.0, r=0.05, v0=0.04,
+      kappa=2.0, theta=0.04, xi=0.3, rho=-0.7,
+      lambda_j=0.1, mu_j=-0.05, sigma_j=0.1,
+      payoff_type='asian_put'
+  )
+  print(f'Price: ${result.price:.4f}')
+
+To run tests:
+  pytest test_bates_extended.py -v
+
+
+
+=== Cell 46 exec=39 ===
+-- stream --
+=== Bates Model CUDA Build ===
+CUDA Home: /usr/local/cuda
+Architectures: 75 80 86 89 90
+
+>>> Compiling bates_kernel.cu...
+>>> Compiling bates_wrapper.cu...
+>>> Linking...
+
+=== Build Complete ===
+Created: bates_kernel_cpp.so
+
+To use:
+  python -c "import bates_kernel_cpp; print(bates_kernel_cpp.__doc__)"
+
+To run tests:
+  pytest test_bates.py -v
+
+
+=== Cell 47 exec=40 ===
+-- stream --
+✓ Custom CUDA kernel loaded successfully
+
+============================================================
+MonteCarloPricerV6 loaded successfully
+============================================================
+Available backends:
+  • numpy: ✓
+  • cupy: ✓
+  • gpu_cpp (custom CUDA): ✓
+============================================================
+
+
+=== Cell 48 exec=41 ===
+-- stream --
+================================================================================
+  COMPREHENSIVE PERFORMANCE BENCHMARK
+  A6000 GPU Optimization Analysis
+================================================================================
+
+Running benchmarks...
+--------------------------------------------------------------------------------
+
+Small (100K) paths:
+  NumPy... 2.625s  Price: $5.4965
+  CuPy... 0.146s  Price: $5.5447  Speedup: 18.0x
+  Custom CUDA... 0.018s  Price: $5.5647  Speedup: 148.8x  Memory: 0.40GB
+
+Medium (1M) paths:
+  NumPy... 29.174s  Price: $5.5189
+  CuPy... 0.467s  Price: $5.5384  Speedup: 62.4x
+  Custom CUDA... 0.147s  Price: $5.5417  Speedup: 198.5x  Memory: 4.04GB
+
+Large (10M) paths:
+  NumPy... 342.545s  Price: $5.5385
+  CuPy... 4.016s  Price: $5.5409  Speedup: 85.3x
+  Custom CUDA... 1.415s  Price: $5.5388  Speedup: 242.2x  Memory: 8.97GB (chunked)
+
+XLarge (50M) paths:
+  NumPy... 1804.703s  Price: $5.5392
+  CuPy... 20.166s  Price: $5.5403  Speedup: 89.5x
+  Custom CUDA... 7.104s  Price: $5.5364  Speedup: 254.0x  Memory: 8.97GB (chunked)
+
+================================================================================
+  BENCHMARK SUMMARY
+================================================================================
+
+Config          NumPy(s)   CuPy(s)    CUDA(s)    CuPy Speedup    CUDA Speedup   
+--------------------------------------------------------------------------------
+Small (100K)    2.625      0.146      0.018      18.0x           148.8x         
+Medium (1M)     29.174     0.467      0.147      62.4x           198.5x         
+Large (10M)     342.545    4.016      1.415      85.3x           242.2x         
+XLarge (50M)    1804.703   20.166     7.104      89.5x           254.0x         
+
+================================================================================
+
+Peak Throughput (Custom CUDA): 7,038,518 paths/second
+A6000 Memory Used: 8.97 GB / 48 GB available
+Estimated Max Paths (252 steps, per chunk): ~10,099,010 paths
+
+
+=== Cell 49 exec=42 ===
+-- stream --
+
+Multi-Stream Timing (Bates CUDA)
+Paths: 5,000,000, Steps: 252, Threads/Block: 256
+Streams    Time (s)     Speedup   
+----------------------------------------
+1          0.908        1.00      
+2          0.901        1.01      
+4          0.898        1.01      
+
+
+=== Cell 50 exec=43 ===
+-- stream --
+Mixed Precision Accuracy (includes MC noise)
+Paths per run: 2,000,000, Repeats: 3
+FP64 Price: 5.542518 (std 0.003674, time 0.467s)
+FP32 Price: 5.537259 (std 0.007733, time 0.113s)
+Abs Error: 0.005258
+Rel Error: 0.094874%
+
+
+=== Cell 52 exec=44 ===
+-- stream --
+============================================================
+  GPU MEMORY SUMMARY
+============================================================
+Memory Pool Used:  3.40 GB
+Memory Pool Total: 8.00 GB
+
+Device Memory Used:  8.29 GB
+Device Memory Free:  42.75 GB
+Device Memory Total: 51.03 GB
+Utilization: 16.2%
+
+Estimated max paths (252 steps): 10,580,982
+============================================================
+
+
+=== Cell 53 exec=45 ===
+-- stream --
+================================================================================
+  THREAD BLOCK CONFIGURATION ANALYSIS
+  A6000: 84 SMs, 128 cores/SM, 1024 max threads/block
+================================================================================
+Testing with 1,000,000 paths, 252 steps
+Config                    Blocks     Total Threads   Median (s)  
+--------------------------------------------------------------------------------
+Conservative (128)        7,813      1,000,064       0.152       
+Default (256)             3,907      1,000,192       0.153       
+High (512)                1,954      1,000,448       0.152       
+Note: The current implementation uses 256 threads/block by default.
+For true optimization, occupancy depends on:
+  - Register usage per thread
+  - Shared memory per block
+  - Maximum threads per SM (2048 for A6000)
+Target: >75% occupancy on A6000 SMs
+================================================================================
+
+
+=== Cell 54 exec=46 ===
+-- stream --
+================================================================================
+  STRONG SCALING ANALYSIS
+  Fixed problem size, varying time steps
+================================================================================
+
+Fixed paths: 5,000,000
+
+Steps      Time (s)     Time/Step (ms)     Paths/sec      
+--------------------------------------------------------------------------------
+50         0.169        3.385              29,544,149     
+100        0.307        3.069              16,293,860     
+252        0.890        3.530              5,620,440      
+500        1.825        3.650              2,740,049      
+1000       3.514        3.514              1,422,785      
+
+================================================================================
+Observation: Time should scale roughly linearly with steps.
+Sublinear scaling indicates good cache utilization.
+
+
+=== Cell 55 exec=47 ===
+-- stream --
+================================================================================
+  MEMORY BANDWIDTH ANALYSIS
+  A6000 Peak Memory Bandwidth: 768 GB/s
+================================================================================
+Analyzing largest completed CUDA run:
+Metric                         Value               
+--------------------------------------------------
+Paths:                                   50,000,000
+Steps:                                          252
+Execution Time:                               7.104 s
+Achieved Bandwidth:                            28.4 GB/s
+Peak Bandwidth (A6000):                       768.0 GB/s
+Efficiency:                                     3.7 %
+================================================================================
+⚠ Low memory bandwidth utilization
+  This is compute-bound, not memory-bound (good for complex kernels)
+Note: Lower efficiency can be expected for compute-intensive kernels
+with Poisson RNG, exp(), sqrt(), and other heavy operations.
+================================================================================
+
+
+=== Cell 56 exec=48 ===
+-- display_data --
+<Figure size 1600x1200 with 4 Axes>
+-- stream --
+
+================================================================================
+  PERFORMANCE DASHBOARD SUMMARY
+================================================================================
+
+Key Observations:
+  • Execution time scales linearly with problem size
+  • Speedup increases with larger problem sizes (better GPU utilization)
+  • Memory usage is predictable and well within A6000 limits
+  • Pricing accuracy improves with more paths (Monte Carlo convergence)
+================================================================================
+

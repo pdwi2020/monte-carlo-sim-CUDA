@@ -1,0 +1,89 @@
+# Monte Carlo Option Pricing - Docker Compose Configuration
+
+version: '3.8'
+
+services:
+  mc-pricer-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mc-pricer:latest
+    container_name: mc-pricer-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+      - LOG_LEVEL=INFO
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - mc-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: mc-redis
+    ports:
+      - "6379:6379"
+    command: redis-server --appendonly yes
+    volumes:
+      - redis-data:/data
+    restart: unless-stopped
+    networks:
+      - mc-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  jupyter:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mc-pricer:latest
+    container_name: mc-jupyter
+    command: >
+      sh -c "pip install jupyter jupyterlab matplotlib seaborn &&
+             jupyter lab --ip=0.0.0.0 --port=8888 --no-browser --allow-root --NotebookApp.token=''"
+    ports:
+      - "8888:8888"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - CUDA_VISIBLE_DEVICES=0
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    volumes:
+      - ./notebooks:/app/notebooks
+      - ./:/app/src
+    networks:
+      - mc-network
+    profiles:
+      - dev
+
+networks:
+  mc-network:
+    driver: bridge
+
+volumes:
+  redis-data:
+    driver: local

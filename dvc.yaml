@@ -1,0 +1,31 @@
+stages:
+  research_quick:
+    cmd: python3 -m research.pipeline --output-dir artifacts/research_dvc_quick --seed 42
+    deps:
+      - research
+      - calibration.py
+      - mc_pricer.py
+    params:
+      - pipeline.seed
+      - pipeline.quick
+    outs:
+      - artifacts/research_dvc_quick/results.json
+      - artifacts/research_dvc_quick/claims.json
+      - artifacts/research_dvc_quick/summary.md
+      - artifacts/research_dvc_quick/publication_assets
+      - artifacts/research_dvc_quick/paper_package
+  research_full:
+    cmd: python3 -m research.pipeline --full --output-dir artifacts/research_dvc_full --seed 42
+    deps:
+      - research
+      - calibration.py
+      - mc_pricer.py
+    params:
+      - pipeline.seed
+      - pipeline.quick
+    outs:
+      - artifacts/research_dvc_full/results.json
+      - artifacts/research_dvc_full/claims.json
+      - artifacts/research_dvc_full/summary.md
+      - artifacts/research_dvc_full/publication_assets
+      - artifacts/research_dvc_full/paper_package
