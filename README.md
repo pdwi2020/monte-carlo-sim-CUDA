@@ -276,36 +276,68 @@ For Financial Modeling Prep free tier:
 mc-research --market-symbol AAPL --market-provider fmp_free --market-api-key YOUR_KEY
 ```
 
-Artifacts written per run:
-- `manifest.json` (environment + seed + commit),
-- `results.json` (all experiment outputs),
-- `claims.json` (claim-by-claim pass/fail evidence),
-- `summary.md` (human-readable run summary).
-- `registry/` (experiment run JSON + latest metric CSV + tags),
-- `paper_package/` (manuscript and appendix drafts),
-- `results_chapter/` (paper-ready chapter markdown + latex),
-- `traceability/` (claim-to-code map + defense/interview briefs),
-- `reproducibility_hashes.json` and deterministic verification report.
+### Research Artifact Contract
 
-Publication export now also includes LaTeX tables and a forecast leaderboard:
-- `publication_assets/tables/claims_summary.tex`
-- `publication_assets/tables/metrics_summary.tex`
-- `publication_assets/tables/forecast_leaderboard.csv`
-- `publication_assets/tables/challenger_leaderboard.csv`
-- `publication_assets/tables/econometrics_summary.csv`
-- `publication_assets/tables/walkforward_windows.csv`
-- `publication_assets/tables/state_space_estimates.csv`
-- `publication_assets/tables/crisis_episode_performance.csv`
-- `publication_assets/tables/crisis_dm_tests.csv`
-- `publication_assets/tables/ablation_study.csv`
-- `publication_assets/tables/cuda_tuning_candidates.csv`
-- `publication_assets/tables/structural_breaks.csv`
-- `publication_assets/tables/global_multiple_testing.csv`
+Each run writes a deterministic artifact bundle:
 
-Reproducibility via DVC is scaffolded with:
-- `dvc.yaml` (quick/full pipeline stages),
-- `params.yaml` (seed/mode/provider defaults),
-- `.dvcignore`.
+| Artifact Group | Purpose | Primary Files |
+|---|---|---|
+| Core run metadata | Environment, seed, commit, reproducibility checks | `manifest.json`, `reproducibility_hashes.json` |
+| Quant results | Full numeric payload | `results.json`, `claims.json`, `summary.md` |
+| Publication package | Paper-ready tables and figures | `publication_assets/tables/*`, `publication_assets/figures/*` |
+| Writing outputs | Manuscript and chapter drafts | `paper_package/*`, `results_chapter/*` |
+| Defense package | Interview/defense traceability | `traceability/*` |
+| Registry | Experiment tracking | `registry/*` |
+
+Reproducibility via DVC is scaffolded with `dvc.yaml`, `params.yaml`, and `.dvcignore`.
+
+### Advanced Graph Suite (`publication_assets/figures`)
+
+The current pipeline produces a dense diagnostic graph set (22 figures in a typical full-feature run):
+
+| Domain | Figure Files |
+|---|---|
+| Forecasting | `forecast_rmse_by_model.png`, `forecast_leaderboard.png`, `forecast_heatmap.png`, `forecast_boxplot.png` |
+| Challenger baselines | `challenger_boxplot.png` |
+| Crisis, ablation, structural breaks | `crisis_episode_heatmap.png`, `ablation_tornado.png`, `structural_break_shift.png` |
+| Multiple-testing inference | `global_mtesting_pvalues.png` |
+| Regime diagnostics | `regime_feature_scatter.png`, `regime_model_performance.png`, `regime_transition_heatmap.png` |
+| Calibration and filtering | `historical_rmse.png`, `historical_parameter_drift.png`, `state_space_filter_vs_raw.png` |
+| Hedging and execution risk | `hedging_frontier.png`, `execution_transaction_frontier.png`, `microstructure_var_cvar.png` |
+| Portfolio tail risk | `portfolio_corr_heatmap.png`, `portfolio_es_contrib.png` |
+| Compute diagnostics | `benchmark_runtime.png`, `hpc_runtime_scaling.png` |
+
+Conditional graphs are emitted when data is available (for example `hpc_speedup_scaling.png`, `cuda_tuning_runtime_map.png`, `cuda_tuning_speedup.png` when CUDA tuning candidates exist).
+
+### Advanced Table Suite (`publication_assets/tables`)
+
+Publication tables are exported in CSV (and where relevant LaTeX):
+
+| Category | Example Files |
+|---|---|
+| Claim + metrics summary | `claims_summary.csv`, `metrics_summary.csv`, `claims_summary.tex`, `metrics_summary.tex` |
+| Forecasting and challengers | `forecast_leaderboard.csv`, `forecast_losses.csv`, `challenger_leaderboard.csv` |
+| Time-series diagnostics | `historical_evaluations.csv`, `historical_calibration_drift.csv`, `state_space_estimates.csv`, `walkforward_windows.csv` |
+| Stress and robustness | `crisis_episode_performance.csv`, `crisis_dm_tests.csv`, `ablation_study.csv` |
+| Statistical controls | `econometrics_summary.csv`, `structural_breaks.csv`, `global_multiple_testing.csv` |
+| Regime analytics | `regime_features.csv`, `regime_model_performance.csv`, `regime_transitions.csv` |
+
+### Quality Workflow (Recommended)
+
+```bash
+# 1) Run full test suite
+pytest -q
+
+# 2) Generate a research artifact set
+mc-research --output-dir artifacts/research
+
+# 3) Package results (figures + tables + chapter + traceability)
+python - <<'PY'
+import shutil
+shutil.make_archive("artifacts/research_bundle", "zip", root_dir="artifacts/research")
+print("Wrote artifacts/research_bundle.zip")
+PY
+```
 
 ---
 
@@ -372,19 +404,29 @@ All Greeks calculated using central finite differences:
 ## 6. File Structure
 
 ```
-monte-carlo-sim-CUDA-main/
-├── bates_kernel.cu           # Original Bates CUDA kernel
-├── bates_wrapper.cpp         # Original pybind11 wrapper
-├── bates_kernel_extended.cu  # Extended kernel (QE, barriers, Greeks)
-├── bates_wrapper_extended.cpp # Extended wrapper
-├── mc_pricer.py              # Python MC library
-├── test_bates.py             # Tests for original kernel
-├── test_bates_extended.py    # Tests for extended features
-├── build.sh                  # Build script for original kernel
-├── build_extended.sh         # Build script for extended kernel
-├── requirements.txt          # Python dependencies
-├── notebook.ipynb            # Jupyter notebook with analysis
-└── README.md                 # This file
+monte-carlo-sim-CUDA/
+├── bates_kernel.cu                 # Original Bates CUDA kernel
+├── bates_kernel_extended.cu        # Extended kernel (QE, barriers, Greeks)
+├── bates_wrapper.cpp               # pybind11 wrapper (original)
+├── bates_wrapper_extended.cpp      # pybind11 wrapper (extended)
+├── mc_pricer.py                    # Python Monte Carlo library
+├── research/                       # Doctoral research framework
+│   ├── pipeline.py                 # End-to-end orchestration
+│   ├── reporting.py                # Publication tables/figures
+│   ├── claims.py                   # Claim definitions/evaluation
+│   ├── structural_breaks.py        # Break diagnostics
+│   ├── multiple_testing.py         # Holm/BH corrections
+│   ├── regime.py                   # Regime-aware diagnostics
+│   ├── challengers.py              # SABR/SSVI challenger baselines
+│   ├── results_chapter.py          # Chapter drafting
+│   └── traceability.py             # Claim-to-code package
+├── tests/                          # Unit/integration tests (API + research + models)
+├── api/                            # FastAPI service layer
+├── dvc.yaml                        # Reproducible stage graph
+├── params.yaml                     # Pipeline defaults
+├── requirements.txt                # Runtime dependencies
+├── pyproject.toml                  # Tooling/test configuration
+└── README.md
 ```
 
 ---
